@@ -24,7 +24,7 @@ struct SignUpView: View {
             TextField("Email", text: $email)
             SecureField("Password", text: $password)
             Button("Sign Up", action: {
-                signUp()
+                Task { await signUp() }
             })
             Spacer()
             Button("Already have an account? Login.", action: showLogin)
@@ -34,25 +34,27 @@ struct SignUpView: View {
         }
     }
     
-    func signUp() {
-        
-        let userAttributes = [AuthUserAttribute(.email, value: email)]
+    func signUp() async {
         let options = AuthSignUpRequest.Options(
-            userAttributes: userAttributes
+            userAttributes: [.init(.email, value: email)]
         )
-       
-        Amplify.Auth.signUp(username: username, password: password, options: options) { result in
-            switch result {
-            case .success(let signUpResult):
-                if case let .confirmUser(deliveryDetails, _) = signUpResult.nextStep {
+        do {
+            let result = try await Amplify.Auth.signUp(
+                username: username,
+                password: password,
+                options: options
+            )
+            
+            switch result.nextStep {
+            case .confirmUser:
+                DispatchQueue.main.async {
                     self.shouldShowConfirmSignUp = true
-                    print("Delivery details \(String(describing: deliveryDetails))")
-                } else {
-                    print("SignUp Complete")
                 }
-            case .failure(let error):
-                print("An error occurred while signUp a user \(error)")
+            default:
+                print(result)
             }
+        } catch {
+            print(error)
         }
     }
 }

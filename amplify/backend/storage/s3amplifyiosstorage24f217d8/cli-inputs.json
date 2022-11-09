@@ -1,0 +1,14 @@
+{
+  "resourceName": "s3amplifyiosstorage24f217d8",
+  "bucketName": "amplify-ios-storage-24f217d8",
+  "policyUUID": "3e2b8255",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "READ"
+  ],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ]
+}

@@ -16,5 +16,11 @@ export type AmplifyDependentResourcesAttributes = {
             "GraphQLAPIIdOutput": "string",
             "GraphQLAPIEndpointOutput": "string"
         }
+    },
+    "storage": {
+        "s3amplifyiosstorage24f217d8": {
+            "BucketName": "string",
+            "Region": "string"
+        }
     }
 }

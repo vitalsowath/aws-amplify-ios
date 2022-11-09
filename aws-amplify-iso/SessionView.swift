@@ -19,7 +19,7 @@ struct SessionView: View {
         StartingView()
             .environmentObject(userState)
             .onAppear {
-                self.getCurrentSession()
+                Task { await getCurrentSession() }
                 self.observeSession()
             }
     }
@@ -27,47 +27,41 @@ struct SessionView: View {
     @ViewBuilder
     func StartingView() -> some View {
         if isSignedIn {
-            Text("Signed in")
+            MainTabView()
         } else {
             LoginView()
         }
     }
     
-    func getCurrentSession() {
-        Amplify.Auth.fetchAuthSession { result in
-            
-            switch result {
-            case .success(let session):
-                if session.isSignedIn {
-                    DispatchQueue.main.async {
-                        self.isSignedIn = session.isSignedIn
-                    }
-                }
-            default:
-                return
+    func getCurrentSession() async {
+        do {
+            let session = try await Amplify.Auth.fetchAuthSession()
+            DispatchQueue.main.async {
+                self.isSignedIn = session.isSignedIn
             }
+            guard session.isSignedIn else { return }
             
-            guard let authUser = Amplify.Auth.getCurrentUser() else {return}
+            let authUser = try await Amplify.Auth.getCurrentUser()
             self.userState.userId = authUser.userId
             self.userState.username = authUser.username
             
-            Amplify.DataStore.query(User.self, byId: self.userState.userId) { result in
-                switch result {
-                case .success(let user):
-                    if let existingUser = user {
-                        print("Existing user: \(existingUser)")
-                    } else {
-                        let newUser = User(
-                            id: authUser.userId,
-                            username: authUser.username
-                        )
-                        let savedUser = Amplify.DataStore.save(newUser)
-                        print("Created user: \(savedUser)")
-                    }
-                case .failure(let dataStoreError):
-                    print("\(dataStoreError)")
-                }
+            let user = try await Amplify.DataStore.query(
+                User.self,
+                byId: authUser.userId
+            )
+            
+            if let existingUser = user {
+                print("Existing user: \(existingUser)")
+            } else {
+                let newUser = User(
+                    id: authUser.userId,
+                    username: authUser.username
+                )
+                let savedUser = try await Amplify.DataStore.save(newUser)
+                print("Created user: \(savedUser)")
             }
+        } catch {
+            print(error)
         }
     }
     
@@ -79,7 +73,7 @@ struct SessionView: View {
                     switch payload.eventName {
                     case HubPayload.EventName.Auth.signedIn:
                         self.isSignedIn = true
-                        self.getCurrentSession()
+                        Task { await getCurrentSession() }
                     case HubPayload.EventName.Auth.signedOut, HubPayload.EventName.Auth.sessionExpired:
                         self.isSignedIn = false
                     default:

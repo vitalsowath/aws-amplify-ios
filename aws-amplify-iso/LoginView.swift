@@ -21,7 +21,9 @@ struct LoginView: View {
                 TextField("Username", text: $username)
                 SecureField("Password", text: $password)
                 Button("Log In", action: {
-                    login()
+                    Task {
+                        await login()
+                    }
                 })
                 Spacer()
                 Button("Don't have an account? Sign up.", action: { shouldShowSignUp = true })
@@ -33,18 +35,20 @@ struct LoginView: View {
         }
     }
     
-    func login() {
-        Amplify.Auth.signIn(username: username, password: password) { result in
-            switch result {
-            case .success(let signInResult):
-                if case .done = signInResult.nextStep {
-                    print("login is done")
-                } else {
-                    print(signInResult.nextStep)
-                }
-            case .failure(let error):
-                print("An error occurred while signIn a user \(error)")
+    func login() async {
+        do {
+            let result = try await Amplify.Auth.signIn(
+                username: username,
+                password: password
+            )
+            switch result.nextStep {
+            case .done:
+                print("login is done")
+            default:
+                print(result.nextStep)
             }
+        } catch {
+            print(error)
         }
     }
 }

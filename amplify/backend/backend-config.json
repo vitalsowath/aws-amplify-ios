@@ -50,5 +50,12 @@
         }
       }
     }
+  },
+  "storage": {
+    "s3amplifyiosstorage24f217d8": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": []
+    }
   }
 }

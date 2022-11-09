@@ -19,7 +19,9 @@ struct ConfirmSignUpView: View {
         VStack {
             TextField("Verification Code", text: $confirmationCode)
             Button("Submit", action: {
-                 confirmSignUp()
+                Task {
+                    await confirmSignUp()
+                }
             })
         }
         .navigationDestination(isPresented: .constant(shouldShowLogin)) {
@@ -27,21 +29,22 @@ struct ConfirmSignUpView: View {
         }
     }
     
-    func confirmSignUp() {
-        _ = Amplify.Auth.confirmSignUp(for: username, confirmationCode: confirmationCode) { result in
-            switch result {
-            case .success(let confirmResult):
-                switch confirmResult.nextStep {
-                case .done:
-                    DispatchQueue.main.async {
-                        self.shouldShowLogin = true
-                    }
-                default:
-                    print(confirmResult.nextStep)
+    func confirmSignUp() async {
+        do {
+            let result = try await Amplify.Auth.confirmSignUp(
+                for: username,
+                confirmationCode: confirmationCode
+            )
+            switch result.nextStep {
+            case .done:
+                DispatchQueue.main.async {
+                    self.shouldShowLogin = true
                 }
-            case .failure(let error):
-                print("An error occurred while confirm a user \(error)")
-            }   
+            default:
+                print(result.nextStep)
+            }
+        } catch {
+            print(error)
         }
     }
 }
