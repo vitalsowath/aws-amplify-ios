@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ProductDetailsView: View {
     
+    @EnvironmentObject var navigationCoordinator: HomeNavigationCoordinator
     @EnvironmentObject var userState: UserState
     @Environment(\.dismiss) var dismiss
     
@@ -28,7 +29,9 @@ struct ProductDetailsView: View {
                 product.productDescription.flatMap(Text.init)
                 
                 if userState.userId != product.userId {
-                    Button("Chat", action: {})
+                    Button("Chat", action: {
+                        Task { await getOrCreateChatRoom() }
+                    })
                 } else {
                     Button("Delete product", action: {
                         Task { await deleteProduct() }
@@ -49,6 +52,49 @@ struct ProductDetailsView: View {
             print("Deleted file: \(productImageKey)")
             
             dismiss.callAsFunction()
+        } catch {
+            print(error)
+        }
+    }
+    
+    func getOrCreateChatRoom() async {
+        do {
+            let chatRooms = try await Amplify.DataStore.query(
+                ChatRoom.self,
+                where: ChatRoom.keys.memberIDs.contains(product.userId)
+                && ChatRoom.keys.memberIDs.contains(userState.userId)
+            )
+            
+            let chatRoom: ChatRoom
+            if let existingChatRoom = chatRooms.first {
+                chatRoom = existingChatRoom
+            } else {
+                let newChatRoom = ChatRoom(memberIDs: [product.userId, userState.userId])
+                let savedChatRoom = try await Amplify.DataStore.save(newChatRoom)
+                chatRoom = savedChatRoom
+            }
+            
+            let otherUser = try await Amplify.DataStore.query(
+                User.self,
+                byId: chatRoom.otherMemberId(currentUser: userState.userId)
+            )
+            
+            guard let ou = otherUser else {return}
+            
+            navigationCoordinator.routes.append(
+                .chat(
+                    chatRoom: chatRoom,
+                    otherUser: ou,
+                    productId: product.id)
+            )
+            
+//            navigationCoordinator.routes.append(
+//                .chat(
+//                    chatRoom: chatRoom,
+//                    otherUsersName: otherUser?.username ?? "",
+//                    productId: product.id
+//                )
+//            )
         } catch {
             print(error)
         }

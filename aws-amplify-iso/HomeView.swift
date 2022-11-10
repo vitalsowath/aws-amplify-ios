@@ -44,6 +44,8 @@ struct HomeView: View {
                 case .productDetails(let product):
                     ProductDetailsView(product: product)
                         .environmentObject(navigationCoordinator)
+                case .chat(chatRoom: let chatRoom, otherUser: let user, productId: let id):
+                    MessagesView(chatRoom: chatRoom, otherUser: user, productId: id)
                 }
             }
         }

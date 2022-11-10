@@ -64,11 +64,11 @@ struct PostProductView: View {
             
             let newProduct = Product(
                 id: productId,
-                price: priceInt,
+                name: name,
                 imageKey: key,
                 productDescription: description.isEmpty ? nil : description,
                 userId: userState.userId,
-                name: name
+                price: priceInt
             )
             let savedProduct = try await Amplify.DataStore.save(newProduct)
             print("Saved product: \(savedProduct)")
